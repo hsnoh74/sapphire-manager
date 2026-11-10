@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { createAsset, deleteAsset, updateAsset } from '../lib/data'
 import { fmt, uniq } from '../lib/format'
 import { useObjectUrls } from '../lib/hooks'
@@ -26,6 +26,8 @@ export function Assets({
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [editKey, setEditKey] = useState(0)
   const [delId, setDelId] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false) // 모바일·태블릿: 등록창 열림 여부
+  useEffect(() => { if (!admin) setShowForm(false) }, [admin])
 
   const previews = useObjectUrls(files)
   const newUrls = useObjectUrls(newFiles)
@@ -49,6 +51,7 @@ export function Assets({
       await createAsset(form, files)
       notify('자산이 등록되었습니다')
       setForm(emptyAssetForm()); setFiles([]); setFileKey((k) => k + 1)
+      setShowForm(false)
     } catch (e: any) {
       notify('등록 중 오류: ' + (e?.message || e), true)
     } finally {
@@ -128,10 +131,14 @@ export function Assets({
 
   const count = (k: string) => assets.filter((a) => a.status === k).length
 
-  let left
+  let left: ReactNode
   if (current && sel?.mode === 'edit') {
     left = (
-      <aside className="n-panel a-form editing">
+      <aside className="n-panel a-form a-sheet editing">
+        <div className="a-sheethead">
+          <span>자산 수정</span>
+          <button className="a-close" onClick={() => setSel({ id: current.id, mode: 'view', idx: 0 })} aria-label="닫기">×</button>
+        </div>
         <div className="n-ct">· 자산 수정</div>
         <div className="a-rule" />
         {formFields(ef, setE)}
@@ -148,10 +155,14 @@ export function Assets({
     )
   } else if (current && sel) {
     left = (
-      <aside className="n-panel a-form">
+      <aside className="n-panel a-form a-sheet">
+        <div className="a-sheethead">
+          <span>자산 상세</span>
+          <button className="a-close" onClick={() => setSel(null)} aria-label="닫기">×</button>
+        </div>
         <div className="n-ctl">
           <div className="n-ct">· 자산 상세</div>
-          <button className="a-btn-ghost sm" onClick={() => setSel(null)}>＋ 새 자산 등록</button>
+          {admin && <button className="a-btn-ghost sm" onClick={() => setSel(null)}>＋ 새 자산 등록</button>}
         </div>
         <div className="a-rule" />
         <Gallery images={current.images} idx={sel.idx} onIdx={(i) => setSel({ ...sel, idx: i })} />
@@ -177,9 +188,13 @@ export function Assets({
         )}
       </aside>
     )
-  } else {
+  } else if (admin) {
     left = (
-      <aside className="n-panel a-form">
+      <aside className={`n-panel a-form a-reg ${showForm ? 'is-open' : ''}`}>
+        <div className="a-sheethead">
+          <span>자산 등록</span>
+          <button className="a-close" onClick={() => setShowForm(false)} aria-label="닫기">×</button>
+        </div>
         <div className="n-ct">· 자산 등록</div>
         <div className="a-rule" />
         {formFields(form, set)}
@@ -190,6 +205,8 @@ export function Assets({
         <button className="a-btn" onClick={submit} disabled={busy}>{busy ? '처리 중…' : '자 산 등 록'}</button>
       </aside>
     )
+  } else {
+    left = null
   }
 
   return (
@@ -199,12 +216,13 @@ export function Assets({
         sub={<>총 <b>{assets.length}</b>건 &nbsp;·&nbsp; 정상 <b>{count('정상')}</b> &nbsp;·&nbsp; 수리중 <b>{count('수리중')}</b> &nbsp;·&nbsp; 대여중 <b>{count('대여중')}</b> &nbsp;·&nbsp; 폐기 <b>{count('폐기')}</b></>}
         right={<AdminCtl on={admin} onToggle={onToggleAdmin} />}
       />
-      <div className="a-grid">
+      {admin && <button className="a-addbtn" onClick={() => { setSel(null); setShowForm(true) }}>＋ 자산 등록</button>}
+      <div className={`a-grid ${left ? '' : 'no-form'}`}>
         {left}
         <section>
           <div className="n-ctl" style={{ marginBottom: 12 }}>
             <div className="a-note" style={{ margin: 0, color: admin ? undefined : 'var(--muted)' }}>
-              {admin ? '관리자 모드 — 오른쪽 끝의 수정·삭제 버튼을 사용하세요. ' : ''}자산명을 클릭하면 왼쪽에 상세 정보가 나타납니다.
+              {admin ? '관리자 모드 — 오른쪽 끝의 수정·삭제 버튼을 사용하세요. ' : ''}자산명을 누르면 상세 정보가 나타납니다.{admin ? '' : ' 등록·수정·삭제는 관리자 모드에서 가능합니다.'}
             </div>
             <button className="a-btn-ghost" onClick={exportXlsx}>📥 자산 엑셀 다운로드</button>
           </div>

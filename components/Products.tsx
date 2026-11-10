@@ -23,11 +23,14 @@ export function Products({
   const [fileKey, setFileKey] = useState(0)
   const [busy, setBusy] = useState(false)
   const [modal, setModal] = useState<ModalState>(null)
+  const [showForm, setShowForm] = useState(false) // 모바일·태블릿: 등록창 열림 여부
   // 수정 창 상태
   const [ef, setEf] = useState<ProductForm>(emptyProductForm())
   const [keep, setKeep] = useState<Img[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [editKey, setEditKey] = useState(0)
+
+  useEffect(() => { if (!admin) setShowForm(false) }, [admin])
 
   const previews = useObjectUrls(files)
   const newUrls = useObjectUrls(newFiles)
@@ -52,6 +55,7 @@ export function Products({
       await createProduct(form, files)
       notify('등록되었습니다')
       setForm(emptyProductForm()); setFiles([]); setFileKey((k) => k + 1)
+      setShowForm(false)
     } catch (e: any) {
       notify('등록 중 오류: ' + (e?.message || e), true)
     } finally {
@@ -105,8 +109,14 @@ export function Products({
         sub={<>총 <b>{n}</b>건 &nbsp;·&nbsp; 재고 <b>{c('재고')}</b> &nbsp;·&nbsp; 판매중 <b>{c('판매중')}</b> &nbsp;·&nbsp; 출하완료 <b>{c('출하완료')}</b></>}
         right={<AdminCtl on={admin} onToggle={onToggleAdmin} />}
       />
-      <div className="a-grid">
-        <aside className="n-panel a-form">
+      {admin && <button className="a-addbtn" onClick={() => setShowForm(true)}>＋ 제품 등록</button>}
+      <div className={`a-grid ${admin ? '' : 'no-form'}`}>
+        {admin && (
+        <aside className={`n-panel a-form a-reg ${showForm ? 'is-open' : ''}`}>
+          <div className="a-sheethead">
+            <span>판매제품 등록</span>
+            <button className="a-close" onClick={() => setShowForm(false)} aria-label="닫기">×</button>
+          </div>
           <div className="n-ct">· 판매제품 등록</div>
           <div className="a-rule" />
           <Field label={<>제품명<Req /></>}>
@@ -132,10 +142,13 @@ export function Products({
           <Previews urls={previews} />
           <button className="a-btn" onClick={submit} disabled={busy}>{busy ? '처리 중…' : '등 록'}</button>
         </aside>
+        )}
 
         <section>
           <div className="n-ct" style={{ marginBottom: 14 }}>· 판매제품 목록</div>
-          {admin && <div className="a-note">관리자 모드 — 각 사진의 수정·삭제 버튼을 사용하세요. 사진을 클릭하면 상세 정보가 열립니다.</div>}
+          {admin
+            ? <div className="a-note">관리자 모드 — 각 사진의 수정·삭제 버튼을 사용하세요. 사진을 클릭하면 상세 정보가 열립니다.</div>
+            : <div className="a-note" style={{ color: 'var(--muted)' }}>제품 사진을 누르면 상세 정보가 열립니다. 등록·수정·삭제는 관리자 모드에서 가능합니다.</div>}
           <div className="a-cards">
             {n === 0 && <div className="a-empty">등록된 제품이 없습니다.</div>}
             {products.map((p, i) => (
@@ -166,18 +179,23 @@ export function Products({
       {modal && current && modal.mode !== 'edit' && (
         <ModalShell onClose={close}>
           <ModalHead eyebrow={`Product No. ${pad(n - products.indexOf(current))}`} title={current.product_name} onClose={close} />
-          <div className="a-mbody">
+          <div className="a-mbody a-prod">
             <Gallery images={current.images} idx={modal.idx} onIdx={(i) => setModal({ ...modal, idx: i })} />
-            <dl className="a-dl">
-              <Row k="카테고리">{current.category}</Row>
-              <Row k="상태"><StatTag status={current.status} kind="product" /></Row>
-              <Row k="응용처">{(current.application || []).map((t) => <span className="a-tag" key={t}>{t}</span>)}</Row>
-              <Row k="불(Boule) ID">{current.boule_id}</Row>
-              <Row k="고객사">{current.customer}</Row>
-              <Row k="판매가격">{current.price != null ? fmt(current.price) : ''}</Row>
-              <Row k="재고 위치">{current.stock_location}</Row>
-              <Row k="상세 설명">{current.memo ? <span style={{ whiteSpace: 'pre-wrap', fontWeight: 400, lineHeight: 1.7, display: 'block' }}>{current.memo}</span> : null}</Row>
-            </dl>
+            <div className="a-info">
+              <div className="a-memo">
+                <div className="k">상세 설명</div>
+                {current.memo ? <div className="t">{current.memo}</div> : <div className="t none">등록된 상세 설명이 없습니다.</div>}
+              </div>
+              <dl className="a-dl">
+                <Row k="카테고리">{current.category}</Row>
+                <Row k="상태"><StatTag status={current.status} kind="product" /></Row>
+                <Row k="응용처">{(current.application || []).map((t) => <span className="a-tag" key={t}>{t}</span>)}</Row>
+                <Row k="불(Boule) ID">{current.boule_id}</Row>
+                <Row k="고객사">{current.customer}</Row>
+                <Row k="판매가격">{current.price != null ? fmt(current.price) : ''}</Row>
+                <Row k="재고 위치">{current.stock_location}</Row>
+              </dl>
+            </div>
           </div>
           {modal.mode === 'del' ? (
             <div className="a-mfoot">
