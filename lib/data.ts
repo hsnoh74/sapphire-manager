@@ -148,3 +148,10 @@ export async function checkIsAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc('is_admin')
   return !error && data === true
 }
+
+/* 관리자 모드 비밀번호 확인 — 비밀번호는 DB(해시)에서만 검사하므로 화면 코드에 들어 있지 않습니다 */
+export async function checkAdminPin(pin: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('check_admin_pin', { p: pin })
+  if (error) throw new Error(error.message)
+  return data === true
+}
