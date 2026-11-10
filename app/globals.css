@@ -176,8 +176,28 @@ textarea.a-inp{resize:vertical;min-height:88px;line-height:1.65}
 .a-warn{margin-right:auto;font-size:13px;color:var(--red)}
 .a-hint{margin-right:auto;font-size:12px;color:var(--muted)}
 .a-err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:6px}
+/* 판매제품: 모바일 등록 버튼·등록창, 상세창(사진 작게 / 설명 강조) */
+.a-addbtn,.a-sheethead{display:none}
+.a-grid.no-form{grid-template-columns:1fr}
+.a-grid>*{min-width:0}
+.n-ctl{flex-wrap:wrap;gap:10px}
+.a-note{overflow-wrap:anywhere}
+.a-mbody.a-prod{grid-template-columns:.8fr 1.2fr}
+.a-prod .a-main{aspect-ratio:16/10}
+.a-info{display:flex;flex-direction:column;gap:18px;min-width:0}
+.a-memo{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--lime);border-radius:12px;padding:16px 18px}
+.a-memo .k{font-size:12px;color:var(--lime);letter-spacing:.08em;font-weight:700;margin-bottom:8px}
+.a-memo .t{font-size:16px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.a-memo .t.none{color:var(--muted);font-size:14px}
+@media(max-width:1023px){
+  .a-addbtn{display:flex;align-items:center;justify-content:center;width:100%;margin:0 0 16px;padding:14px;border-radius:12px;border:0;background:var(--lime);color:#09090c;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+  .a-form.a-reg:not(.is-open){display:none}
+  .a-form.is-open,.a-form.a-sheet{display:block;position:fixed;inset:0;z-index:70;overflow:auto;border-radius:0;border:0;background:var(--bg);padding:0 18px 48px}
+  .a-form.is-open>.n-ct,.a-form.is-open>.a-rule,.a-form.a-sheet>.n-ct,.a-form.a-sheet>.n-ctl,.a-form.a-sheet>.a-rule{display:none}
+  .a-sheethead{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2;background:var(--bg);padding:14px 0;margin-bottom:6px;border-bottom:1px solid var(--line);font-weight:700;font-size:16px}
+}
 @media(max-width:1023px){.a-grid{grid-template-columns:1fr}.a-form{position:static}.n-row2,.d-lists{grid-template-columns:1fr}.n-kpis{grid-template-columns:1fr 1fr}.d-photos{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:720px){.a-mbody{grid-template-columns:1fr}}
+@media(max-width:720px){.a-mbody{grid-template-columns:1fr}.a-mbody.a-prod{grid-template-columns:1fr;gap:16px}.a-prod .a-main{aspect-ratio:auto;height:150px}.a-prod .a-th{width:44px;height:44px}.a-memo .t{font-size:15.5px}}
 @media(max-width:560px){.n-kpis{grid-template-columns:1fr}.n-title{font-size:22px}}
 
 .n-loading{display:flex;align-items:center;justify-content:center;min-height:60vh;color:var(--muted);font-size:14px}

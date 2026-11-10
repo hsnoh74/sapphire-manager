@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { checkIsAdmin, fetchAssets, fetchProducts } from '../lib/data'
+import { checkAdminPin, checkIsAdmin, fetchAssets, fetchProducts } from '../lib/data'
 import { Asset, Product } from '../lib/types'
 import { Login } from '../components/Login'
 import { Dashboard } from '../components/Dashboard'
@@ -11,8 +11,6 @@ import { COMPANY, ModalHead, ModalShell } from '../components/ui'
 
 type Tab = 'dash' | 'products' | 'assets'
 // 선택 사항: 관리자 모드 진입 시 한 번 더 확인하는 비밀번호(실수 방지용, 보안 기능 아님).
-// GitHub Secrets 에 NEXT_PUBLIC_ADMIN_PIN 을 넣으면 사용되고, 비워 두면 묻지 않습니다.
-const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || ''
 
 export default function Page() {
   const [authReady, setAuthReady] = useState(false)
@@ -26,6 +24,7 @@ export default function Page() {
   const [pinOpen, setPinOpen] = useState(false)
   const [pin, setPin] = useState('')
   const [pinErr, setPinErr] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
   const [open, setOpen] = useState<{ kind: 'product' | 'asset'; id: string } | null>(null)
   const [toast, setToast] = useState<{ msg: string; bad: boolean } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -72,12 +71,17 @@ export default function Page() {
       notify('관리자 권한이 없는 계정입니다. 관리자에게 권한 부여를 요청하세요.', true)
       return
     }
-    if (ADMIN_PIN) { setPin(''); setPinErr(''); setPinOpen(true); return }
-    setAdminMode(true); notify('관리자 모드가 켜졌습니다')
+    setPin(''); setPinErr(''); setPinOpen(true)
   }
-  const tryPin = () => {
-    if (pin === ADMIN_PIN) { setPinOpen(false); setAdminMode(true); notify('관리자 모드가 켜졌습니다') }
-    else setPinErr('비밀번호가 올바르지 않습니다.')
+  const tryPin = async () => {
+    if (!pin || pinBusy) return
+    setPinBusy(true)
+    try {
+      if (await checkAdminPin(pin)) { setPinOpen(false); setPin(''); setAdminMode(true); notify('관리자 모드가 켜졌습니다') }
+      else { setPinErr('비밀번호가 올바르지 않습니다.'); setPin('') }
+    } catch {
+      setPinErr('확인 중 오류가 발생했습니다. 설정(SQL)이 적용되었는지 확인하세요.')
+    } finally { setPinBusy(false) }
   }
 
   const goTab = (t: Tab) => { setTab(t); window.scrollTo(0, 0) }
@@ -132,13 +136,13 @@ export default function Page() {
           <div style={{ padding: '16px 0 0' }}>
             <p style={{ fontSize: 13.5, margin: '0 0 12px', lineHeight: 1.6 }}>관리자 확인 비밀번호를 입력하세요.</p>
             <input
-              className="a-inp" type="password" autoFocus value={pin} placeholder="비밀번호"
+              className="a-inp" type="password" autoFocus autoComplete="new-password" value={pin} placeholder="비밀번호"
               onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && tryPin()}
             />
             <div className="a-err">{pinErr}</div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
               <button className="a-btn-ghost" onClick={() => setPinOpen(false)}>취소</button>
-              <button className="a-btn" style={{ width: 'auto', padding: '9px 22px' }} onClick={tryPin}>확인</button>
+              <button className="a-btn" style={{ width: 'auto', padding: '9px 22px' }} onClick={tryPin} disabled={pinBusy}>{pinBusy ? '확인 중…' : '확인'}</button>
             </div>
           </div>
         </ModalShell>
